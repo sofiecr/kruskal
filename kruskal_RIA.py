@@ -39,12 +39,8 @@ def Kruskal(correlationmatrix):
     
     noVars = len(correlationmatrix) #number of independent variables
     
-    #calculate the factors to multiply the (semipartial) correlations with
-    T = np.zeros(shape=(noVars - 1, noVars - 1))
-    for n in range(noVars - 1):
-        for k in range(noVars - 1):
-            T[n][k] = factorial(n) * factorial(k) 
-    T_diagonal = T[::-1,]
+    #calculate the factors to multiply the (semipartial) correlations with (in diagonal)
+    T = [[factorial(n) * factorial(k) for n in range(noVars - 1)] for k in range(noVars - 1)][::-1]
     
     #create structures to save output
     mean_semipart = np.zeros((noVars - 1))
@@ -60,7 +56,7 @@ def Kruskal(correlationmatrix):
         CV_list.remove(IV)
         
         #if no control variables => take squared correlation
-        mean_semipart[IV - 1] = (correlationmatrix[0, IV] ** 2) * T_diagonal[0,0]
+        mean_semipart[IV - 1] = (correlationmatrix[0, IV] ** 2) * T[0][0]
         list_semipart.append([correlationmatrix[0, IV] ** 2])
         
         #loop over all possible combinations of control variables (CV)
@@ -75,19 +71,19 @@ def Kruskal(correlationmatrix):
             R2cont = calcR2(list(CV), correlationmatrix)
             #calculate semipartial correlation
             semipart = R2full - R2cont
-            print(R2full, R2cont)
             #store the semipart as a list for each IV
             list_semipart[IV - 1].append(semipart)
             
             #add to sum of mean squared semipartial correlation    
             #weight => see https://oeis.org/A098361
-            mean_semipart[IV - 1] += semipart * T_diagonal[len(CV), len(CV)]
+            mean_semipart[IV - 1] += semipart * T[len(CV)][len(CV)]
       
         mean_semipart[IV - 1] /= factorial(noVars - 1)
+    
     
     #print the output
     print("\tRelative importance (%)\tMean of squared semipartial correlations\tMin\tMax")
     template = "Variable {}\t{}\t{}\t{}\t{}\n"
     for IV in range(noVars - 1):
-        print(template.format(IV + 1, mean_semipart[IV] * 100, mean_semipart[IV], min(list_semipart[IV]), max(list_semipart[IV])))
+        print(template.format(IV + 1, mean_semipart[IV]/sum(mean_semipart), mean_semipart[IV], min(list_semipart[IV]), max(list_semipart[IV])))
 
